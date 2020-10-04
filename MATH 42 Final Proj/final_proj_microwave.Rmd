@@ -1,0 +1,406 @@
+---
+title: "final_proj_microwave"
+author: "Joshua Li"
+date: "6/13/2020"
+output: html_document
+---
+
+```{r}
+
+library(readr)
+library(dplyr)
+dryer <- read_tsv("hair_dryer.tsv")
+microwave <- read_tsv("microwave.tsv")
+pacifier <- read_tsv("pacifier.tsv")
+```
+
+```{r}
+library(dplyr)
+microwave <- mutate(microwave, help_score = ifelse(total_votes==0, 0, helpful_votes^2/total_votes))
+```
+
+```{r}
+library(dplyr)
+date_list <- strsplit(microwave$review_date, split = '/')
+day <- numeric()
+month <- numeric()
+year <- numeric()
+for (entry in date_list) {
+  day <- c(day, as.numeric(entry[2]))
+  month <- c(month, as.numeric(entry[1]))
+  year <- c(year, as.numeric(entry[3]))
+}
+microwave <- mutate(microwave, day = day)
+microwave <- mutate(microwave, month = month)
+microwave <- mutate(microwave, year = year)
+
+```
+
+```{r}
+days_since_release <- numeric()
+for (i in seq_len(nrow(microwave))) {
+  years <- microwave$year[i] - 2002
+  months <- microwave$month[i] - 3
+  if (months < 0) {
+    years <- years - 1
+    months <- months + 12
+  }
+  days_since_release[i] <- round(years*365.25 + months*30.4375)
+}
+microwave <- mutate(microwave, days_since_release = days_since_release)
+```
+
+```{r}
+not_helpful <- which(microwave$help_score == 0)
+length(not_helpful)
+helpful <- which(microwave$help_score > 5)
+helpful_headline <- microwave$review_headline[helpful]
+helpful_reviews <- microwave$review_body[helpful]
+length(helpful_reviews)
+helpful_ratings <- microwave$star_rating[helpful]
+
+more_helpful <- which(microwave$help_score > 100) # 30 reviews
+more_helpful_headline <- microwave$review_headline[more_helpful]
+more_helpful_reviews <- microwave$review_body[more_helpful]
+more_helpful_ratings <- microwave$star_rating[more_helpful]
+```
+```{r}
+more_helpful_reviews
+
+```
+
+
+```{r}
+words <- list()
+for (i in 1:30) {
+  words[i] <- strsplit(more_helpful_reviews[i], " ")
+}
+words
+```
+
+
+```{r}
+library(stringr)
+one_star <- which(more_helpful_ratings == 1)
+one_star_review <- more_helpful_reviews[one_star]
+not <- which(str_detect(one_star_review, "not"))
+one_star_review
+one_star_review[not];
+#best <- which(str_detect(more_helpful_reviews, "best"))
+#more_helpful_ratings
+#more_helpful_reviews[best]
+
+```
+
+```{r}
+library(stringr)
+helpful_one_star <- which(microwave$star_rating == 1 | microwave$star_rating == 2)
+length(helpful_one_star)
+helpful_one_star_review <- microwave$review_body[helpful_one_star]
+broke <- which(str_detect(helpful_one_star_review, "broke"))   # 6/75
+#helpful_one_star_review[broke]
+
+bad <- which(str_detect(helpful_one_star_review, "bad"))     # 8/75
+#helpful_one_star_review[bad]
+
+cheap <- which(str_detect(helpful_one_star_review, "cheap"))       # 5/75
+#helpful_one_star_review[cheap]
+
+expensive <- which(str_detect(helpful_one_star_review, "expensive"))   # 5/75
+#helpful_one_star_review[expensive]
+
+money <- which(str_detect(helpful_one_star_review, "money")) # 13/75
+#helpful_one_star_review[money]
+
+not <- which(str_detect(helpful_one_star_review, "not"))     # 52/75
+#helpful_one_star_review[not]
+
+burn <- which(str_detect(helpful_one_star_review, "burn"))    # 20/75
+#helpful_one_star_review[burn]
+
+work <- which(str_detect(helpful_one_star_review, "work"))    # 21/75
+#helpful_one_star_review[work]
+
+poor <- which(str_detect(helpful_one_star_review, "poor"))    # 2/75
+#helpful_one_star_review[poor]
+
+voltage <- which(str_detect(helpful_one_star_review, "loud")) # 4/75
+#helpful_one_star_review[voltage]
+
+mo <- which(str_detect(helpful_one_star_review, "month"))     # 24/75
+#helpful_one_star_review[mo]
+
+days <- which(str_detect(helpful_one_star_review, "week"))
+#helpful_one_star_review[days]
+
+hot <- which(str_detect(helpful_one_star_review, "hot"))    # 24/75
+#helpful_one_star_review[hot]
+
+wet <- which(str_detect(helpful_one_star_review, "wet"))    # 3/75
+#helpful_one_star_review[wet]
+
+shut <- which(str_detect(helpful_one_star_review, "shut"))
+#helpful_one_star_review[shut]
+
+H <- c(length(not), length(work), length(mo), length(hot), length(money), length(burn), length(days), length(broke), length(bad))
+M <- c("not", "month", "work", "hot", "burn", "week", "money", "bad", "broke")
+barplot(H, names.arg = M , xlab = "Keywords", ylab = "Frequency", main = "Keywords in 1671 One/Two Star Rating Reviews", las = 2, horiz = TRUE)
+
+
+```
+
+```{r}
+one_star_rating <- which(microwave$star_rating == 1)
+num_1star <- length(one_star_rating)
+
+two_star_rating <- which(microwave$star_rating == 2)
+num_2star <- length(two_star_rating)
+
+three_star_rating <- which(microwave$star_rating == 3)
+num_3star <- length(three_star_rating)
+
+four_star_rating <- which(microwave$star_rating == 4)
+num_4star <- length(four_star_rating)
+
+five_star_rating <- which(microwave$star_rating == 5)
+num_5star <- length(five_star_rating)
+
+L <- c(num_1star, num_2star, num_3star, num_4star, num_5star)
+N <- c("1", "2", "3", "4", "5")
+barplot(L, names.arg = N, main = "Distribution of ratings for microwave")
+```
+
+```{r}
+h_one_star <- which(microwave$star_rating == 1 & microwave$help_score > 10)
+num_h1 <- length(h_one_star)
+
+h_two_star <- which(microwave$star_rating == 2 & microwave$help_score > 10)
+num_h2 <- length(h_two_star)
+
+h_three_star <- which(microwave$star_rating == 3 & microwave$help_score > 10)
+num_h3 <- length(h_three_star)
+
+h_four_star <- which(microwave$star_rating == 4 & microwave$help_score > 10)
+num_h4 <- length(h_four_star)
+
+h_five_star <- which(microwave$star_rating == 5 & microwave$help_score > 10)
+num_h5 <- length(h_five_star)
+
+hehe <- c(num_h1, num_h2, num_h3, num_h4, num_h5)
+barplot(hehe, names.arg = N, main = "Distribution of ratings with helpfulness score > 10 for microwave")
+```
+```{r}
+micro_products <- unique(microwave$product_id)
+micro_products[1]
+#dryer_products
+
+m_count <- vector(length = length(micro_products))
+j <- 1
+while (j < length(micro_products)) {
+  i <- 1
+  while (i < length(microwave$product_id)) {
+    id <- microwave$product_id[i]
+    if (id == micro_products[j]) {
+      m_count[j] = m_count[j] + 1
+    }
+    i = i + 1
+  }
+  j = j + 1
+}
+#count = count / length(dryer$product_id)
+m_count
+
+#matter_count <- which(count >= 100)
+#matter_count
+
+#x <- which(dryer$product_id == dryer_products[matter_count])
+#analyze the products that have over 100 reviews
+
+#b003_ratings <- dryer$star_rating[which(dryer$product_id == "B003V264WW")]
+#hist(b003_ratings)
+```
+
+```{r}
+m_helpful_count <- which(m_count >= 75)
+micro_products[m_helpful_count]
+```
+
+```{r}
+micro1_index <- which(microwave$product_id == micro_products[m_helpful_count][1])
+reviews_micro1 <- microwave$review_body[micro1_index]
+#reviews_micro1
+reviews_micro1_StarRating <- with(microwave, tapply(microwave$star_rating[micro1_index], microwave$review_body[micro1_index], mean))
+#reviews_dryer1_Star
+```
+#replicate for all 5 dryers with more than 300 reviews
+```{r}
+micro2_index <- which(microwave$product_id == micro_products[m_helpful_count][2])
+reviews_micro2 <- microwave$review_body[micro2_index]
+#reviews_micro1
+reviews_micro2_StarRating <- with(microwave, tapply(microwave$star_rating[micro2_index], microwave$review_body[micro2_index], mean))
+
+micro3_index <- which(microwave$product_id == micro_products[m_helpful_count][3])
+reviews_micro3 <- microwave$review_body[micro3_index]
+#reviews_micro1
+reviews_micro3_StarRating <- with(microwave, tapply(microwave$star_rating[micro3_index], microwave$review_body[micro3_index], mean))
+
+micro4_index <- which(microwave$product_id == micro_products[m_helpful_count][4])
+reviews_micro4 <- microwave$review_body[micro4_index]
+#reviews_micro1
+reviews_micro4_StarRating <- with(microwave, tapply(microwave$star_rating[micro4_index], microwave$review_body[micro4_index], mean))
+
+micro5_index <- which(microwave$product_id == micro_products[m_helpful_count][5])
+reviews_micro5 <- microwave$review_body[micro5_index]
+#reviews_micro1
+reviews_micro5_StarRating <- with(microwave, tapply(microwave$star_rating[micro5_index], microwave$review_body[micro5_index], mean))
+
+micro6_index <- which(microwave$product_id == micro_products[m_helpful_count][6])
+reviews_micro6 <- microwave$review_body[micro6_index]
+#reviews_micro1
+reviews_micro6_StarRating <- with(microwave, tapply(microwave$star_rating[micro6_index], microwave$review_body[micro6_index], mean))
+
+```
+# perform str_detect on these functions
+```{r}
+micro1_1star_index <- which(microwave$star_rating[micro1_index] == 1)     # disappointed, too heavy, broke easily
+micro1_1star <- reviews_micro1[micro1_1star_index]
+#dryer1_1star
+
+micro2_1star_index <- which(microwave$star_rating[micro2_index] == 1)     # not hot enough
+micro2_1star <- reviews_micro2[micro2_1star_index]
+#dryer2_1star
+
+micro3_1star_index <- which(microwave$star_rating[micro3_index] == 1)     # has retractable cord that broke
+micro3_1star <- reviews_micro3[micro3_1star_index]
+#dryer1_1star
+
+micro4_1star_index <- which(microwave$star_rating[micro4_index] == 1)     # no durability
+micro4_1star <- reviews_micro4[micro4_1star_index]
+#dryer1_1star
+
+micro5_1star_index <- which(microwave$star_rating[micro5_index] == 1)     # has a retractable cord that broke, not hot enough
+micro5_1star <- reviews_micro5[micro5_1star_index]
+#dryer1_1star
+
+micro6_1star_index <- which(microwave$star_rating[micro6_index] == 1)
+micro6_1star <- reviews_micro6[micro6_1star_index]
+
+mbad_1 <- which(str_detect(micro1_1star, "spark"))
+cat(length(mbad_1), length(micro1_1star), " ")        # 6/14 time, 5/14 quality, 4/14 cook time
+
+mbad_2 <- which(str_detect(micro2_1star, "not"))
+cat(length(mbad_2), length(micro2_1star), " ")        # 5/9 time, 7/9 quality, 3/9 cook time, 2/9 customer service
+
+mbad_3 <- which(str_detect(micro3_1star, "plug"))
+cat(length(mbad_3), length(micro3_1star), " ")        # 4/7 customer service, 5/7 quality, 2/7 time, 1/7 small
+
+mbad_4 <- which(str_detect(micro4_1star, "cheap"))      
+cat(length(mbad_4), length(micro4_1star), " ")        # 2/8 customer service, 2/8 weak power, 5/8 quality, 2/8 design, 2/8 small
+
+mbad_5 <- which(str_detect(micro5_1star, "cord"))
+cat(length(mbad_5), length(micro5_1star), " ")        # 4/11 small, 2/11 customer service, 9/11 quality
+
+mbad_6 <- which(str_detect(micro6_1star, "fail"))       # 28/57 broken, 18/57 error/customer service, 11/57 quality
+cat(length(mbad_6), length(micro6_1star), " ")
+
+#reviews_micro1[micro1_1star_index]
+#reviews_micro2[micro2_1star_index]
+#reviews_micro3[micro3_1star_index]
+#reviews_micro4[micro4_1star_index]
+#reviews_micro5[micro5_1star_index]
+reviews_micro6[micro6_1star_index]
+```
+#finds common keywords specific to the star rating
+```{r}
+slices <- c(6+5+2, 5+7+5+5+9+11, 4+3, 2+4+2+2+18, 28)
+lbls <- c("durability", "poor quality", "cooking time",  "customer service", "broken")
+color <- c("red", "blue", "yellow", "green", "purple")
+pie(slices, labels = lbls, col = color, main = "What One-Star Reviewers did NOT like about their microwave", angle = 45, density = 50)
+```
+
+```{r}
+micro1_5star_index <- which(microwave$star_rating[micro1_index] == 5)     # disappointed, too heavy, broke easily
+micro1_5star <- reviews_micro1[micro1_5star_index]
+#dryer1_1star
+
+micro2_5star_index <- which(microwave$star_rating[micro2_index] == 5)     # not hot enough
+micro2_5star <- reviews_micro2[micro2_5star_index]
+#dryer2_1star
+
+micro3_5star_index <- which(microwave$star_rating[micro3_index] == 5)     # has retractable cord that broke
+micro3_5star <- reviews_micro3[micro3_5star_index]
+#dryer1_1star
+
+micro4_5star_index <- which(microwave$star_rating[micro4_index] == 5)     # no durability
+micro4_5star <- reviews_micro4[micro4_5star_index]
+#dryer1_1star
+
+micro5_5star_index <- which(microwave$star_rating[micro5_index] == 5)     # has a retractable cord that broke, not hot enough
+micro5_5star <- reviews_micro5[micro5_5star_index]
+#dryer1_1star
+
+micro6_5star_index <- which(microwave$star_rating[micro6_index] == 5)
+micro6_5star <- reviews_micro6[micro6_5star_index]
+
+mgood_1 <- which(str_detect(micro1_5star, "install"))
+cat(length(mgood_1), length(micro1_5star), " ")        # 21/52 small (space saving), 13 work, 7 price, 2 design, 1 install
+
+mgood_2 <- which(str_detect(micro2_5star, "install"))
+cat(length(mgood_2), length(micro2_5star), " ")       # 13/37 small, 5 work, 11 price, 0 design
+
+mgood_3 <- which(str_detect(micro3_5star, "install"))
+cat(length(mgood_3), length(micro3_5star), " ")       # 44/46 small, 10 work, 3 price, 4 design, 1 install
+
+mgood_4 <- which(str_detect(micro4_5star, "install"))      
+cat(length(mgood_4), length(micro4_5star), " ")       # 47/50 small, 10 work, 4 price, 6 design
+
+mgood_5 <- which(str_detect(micro5_5star, "install"))
+cat(length(mgood_5), length(micro5_5star), " ")       # 46/43 small, 11 work, 4 price, 3 design
+
+mgood_6 <- which(str_detect(micro6_5star, "install"))      
+cat(length(mgood_6), length(micro6_5star), " ")       # 1/9 small, 4 work, 2 price, 0 design, 2 install
+
+#reviews_micro1[micro1_5star_index]
+#reviews_micro2[micro2_5star_index]
+#reviews_micro3[micro3_5star_index]
+reviews_micro4[micro4_5star_index]
+#reviews_micro5[micro5_5star_index]
+#reviews_micro6[micro6_5star_index]
+```
+
+```{r}
+slices <- c(21+13+44+47+46+1, 13+5+20+11+4, 7+11+3+4+4+2, 2+4+6+3, 4)
+lbls <- c("space efficient", "works well", "price", "design", "easy to install")
+color <- c("red", "blue", "yellow", "green", "purple")
+pie(slices, labels = lbls, col = color, main = "What Five-Star Reviewers liked about their microwave", angle = 45, density = 50)
+```
+
+```{r}
+m_ratings_by_product <- with(microwave, tapply(microwave$star_rating,microwave$product_id,mean))
+m_ratings_by_product
+m_success <- m_count * (m_ratings_by_product - 3)          # 3/80 products are successful (> 300)
+#hist(m_success[which(m_success >= 300)], main = "Histogram of Success Score > 300", xlab = "Success Score")
+hist(m_success, main = "Histogram of Adjusted Success Score for Microwave", xlab = "Success Score")
+hist(m_ratings_by_product, main = "Average Ratings by Product", xlab = "average ratings for microwave products")
+#reviews_by_product <- with(dryer, tapply(nrow(dryer), dryer$product_id))
+# make various histograms of diff success scores, as well as big picture
+```
+
+```{r}
+m_counter <- 0
+history <- c()
+for (i in (nrow(microwave)-1):1) {
+  if (microwave$star_rating[i] == microwave$star_rating[i+1]) {
+    m_counter <- m_counter + 1
+  } else {m_counter <- 0}
+  history <- c(history, m_counter)
+}
+plot(history, type = 'l', main = "Finding Consecutive Ratings over Time - Microwave")
+```
+
+```{r}
+index <- which(history >= 3)
+hist(dryer$star_rating[nrow(dryer)-index-1], main = "Histogram of Star Ratings after 3 Consecutive Ratings for Microwave", xlab = "Star Ratings")
+
+```
+

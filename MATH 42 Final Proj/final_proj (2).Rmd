@@ -1,0 +1,115 @@
+---
+title: "Final Project"
+author: "Joshua Li - 905328390, Matthew Turk, Sophia Yang"
+date: "5/30/2020"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+dryer <- read_tsv("hair_dryer.tsv")
+microwave <- read_tsv("microwave.tsv")
+pacifier <- read_tsv("pacifier.tsv")
+```
+
+```{r}
+dryer <- mutate(dryer, help_score = ifelse(total_votes==0, 0, helpful_votes^2/total_votes))
+```
+
+```{r}
+date_list <- strsplit(dryer$review_date, split = '/')
+day <- numeric()
+month <- numeric()
+year <- numeric()
+for (entry in date_list) {
+  day <- c(day, as.numeric(entry[2]))
+  month <- c(month, as.numeric(entry[1]))
+  year <- c(year, as.numeric(entry[3]))
+}
+
+```
+
+```{r}
+days_since_release <- numeric()
+for (i in seq_len(nrow(dryer))) {
+  years <- dryer$year[i] - 2002
+  months <- dryer$month[i] - 3
+  if (months < 0) {
+    years <- years - 1
+    months <- months + 12
+  }
+  days_since_release[i] <- round(years*365.25 + months*30.4375)
+}
+dryer <- mutate(dryer, days_since_release = days_since_release)
+```
+
+```{r}
+helpful <- which(dryer$help_score > 10)
+helpful_headline <- dryer$review_headline[helpful]
+helpful_reviews <- dryer$review_body[helpful]
+helpful_ratings <- dryer$star_rating[helpful]
+
+more_helpful <- which(dryer$help_score > 100) # 30 reviews
+more_helpful_headline <- dryer$review_headline[more_helpful]
+more_helpful_reviews <- dryer$review_body[more_helpful]
+more_helpful_ratings <- dryer$star_rating[more_helpful]
+```
+```{r}
+more_helpful_reviews
+
+```
+
+
+```{r}
+words <- list()
+for (i in 1:30) {
+  words[i] <- strsplit(more_helpful_reviews[i], " ")
+}
+words
+```
+
+
+```{r}
+library(stringr)
+one_star <- which(more_helpful_ratings == 1)
+one_star_review <- more_helpful_reviews[one_star]
+not <- which(str_detect(one_star_review, "not"))
+one_star_review
+one_star_review[not];
+#best <- which(str_detect(more_helpful_reviews, "best"))
+#more_helpful_ratings
+#more_helpful_reviews[best]
+
+```
+
+```{r}
+library(stringr)
+helpful_one_star <- which(helpful_ratings == 1)
+helpful_one_star_review <- helpful_reviews[helpful_one_star]
+#broke <- which(str_detect(helpful_one_star_review, "broke"))   # 6/75
+#helpful_one_star_review[broke]
+
+#bad <- which(str_detect(helpful_one_star_review, "bad"))     # 8/75
+#helpful_one_star_review[bad]
+
+#cheap <- which(str_detect(helpful_one_star_review, "cheap"))       # 5/75
+#helpful_one_star_review[cheap]
+
+#expensive <- which(str_detect(helpful_one_star_review, "expensive"))   # 5/75
+#helpful_one_star_review[expensive]
+
+#not <- which(str_detect(helpful_one_star_review, "not"))     # 52/75
+#helpful_one_star_review[not]
+
+#hot <- which(str_detect(helpful_one_star_review, "burn"))    # 20/75
+#helpful_one_star_review[hot]
+
+#work <- which(str_detect(helpful_one_star_review, "work"))    # 21/75
+#helpful_one_star_review[work]
+
+#poor <- which(str_detect(helpful_one_star_review, "poor"))    # 2/75
+#helpful_one_star_review[poor]
+
+
+```

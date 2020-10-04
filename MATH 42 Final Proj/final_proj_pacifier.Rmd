@@ -1,0 +1,390 @@
+---
+title: "final_proj_pacifier"
+author: "Joshua Li"
+date: "6/15/2020"
+output: html_document
+---
+
+```{r}
+
+library(readr)
+library(dplyr)
+dryer <- read_tsv("hair_dryer.tsv")
+microwave <- read_tsv("microwave.tsv")
+pacifier <- read_tsv("pacifier.tsv")
+```
+
+```{r}
+library(dplyr)
+pacifier <- mutate(pacifier, help_score = ifelse(total_votes==0, 0, helpful_votes^2/total_votes))
+```
+
+```{r}
+library(dplyr)
+date_list <- strsplit(pacifier$review_date, split = '/')
+day <- numeric()
+month <- numeric()
+year <- numeric()
+for (entry in date_list) {
+  day <- c(day, as.numeric(entry[2]))
+  month <- c(month, as.numeric(entry[1]))
+  year <- c(year, as.numeric(entry[3]))
+}
+pacifier <- mutate(pacifier, day = day)
+pacifier <- mutate(pacifier, month = month)
+pacifier <- mutate(pacifier, year = year)
+
+```
+
+```{r}
+days_since_release <- numeric()
+for (i in seq_len(nrow(pacifier))) {
+  years <- pacifier$year[i] - 2002
+  months <- pacifier$month[i] - 3
+  if (months < 0) {
+    years <- years - 1
+    months <- months + 12
+  }
+  days_since_release[i] <- round(years*365.25 + months*30.4375)
+}
+pacifier <- mutate(pacifier, days_since_release = days_since_release)
+```
+
+```{r}
+not_helpful <- which(pacifier$help_score == 0)
+length(not_helpful)
+helpful <- which(pacifier$help_score > 5)
+helpful_headline <- pacifier$review_headline[helpful]
+helpful_reviews <- pacifier$review_body[helpful]
+length(helpful_reviews)
+helpful_ratings <- pacifier$star_rating[helpful]
+
+more_helpful <- which(pacifier$help_score > 100) # 30 reviews
+more_helpful_headline <- pacifier$review_headline[more_helpful]
+more_helpful_reviews <- pacifier$review_body[more_helpful]
+more_helpful_ratings <- pacifier$star_rating[more_helpful]
+```
+
+```{r}
+more_helpful_reviews
+
+```
+
+
+```{r}
+words <- list()
+for (i in 1:30) {
+  words[i] <- strsplit(more_helpful_reviews[i], " ")
+}
+words
+```
+
+
+```{r}
+library(stringr)
+one_star <- which(more_helpful_ratings == 1)
+one_star_review <- more_helpful_reviews[one_star]
+not <- which(str_detect(one_star_review, "not"))
+one_star_review
+one_star_review[not];
+#best <- which(str_detect(more_helpful_reviews, "best"))
+#more_helpful_ratings
+#more_helpful_reviews[best]
+
+```
+
+```{r}
+library(stringr)
+helpful_one_star <- which(pacifier$star_rating == 1 | pacifier$star_rating == 2)
+length(helpful_one_star)
+helpful_one_star_review <- pacifier$review_body[helpful_one_star]
+broke <- which(str_detect(helpful_one_star_review, "broke"))   # 6/75
+#helpful_one_star_review[broke]
+
+bad <- which(str_detect(helpful_one_star_review, "bad"))     # 8/75
+#helpful_one_star_review[bad]
+
+cheap <- which(str_detect(helpful_one_star_review, "cheap"))       # 5/75
+#helpful_one_star_review[cheap]
+
+expensive <- which(str_detect(helpful_one_star_review, "expensive"))   # 5/75
+#helpful_one_star_review[expensive]
+
+money <- which(str_detect(helpful_one_star_review, "money")) # 13/75
+#helpful_one_star_review[money]
+
+not <- which(str_detect(helpful_one_star_review, "not"))     # 52/75
+#helpful_one_star_review[not]
+
+burn <- which(str_detect(helpful_one_star_review, "burn"))    # 20/75
+#helpful_one_star_review[burn]
+
+work <- which(str_detect(helpful_one_star_review, "work"))    # 21/75
+#helpful_one_star_review[work]
+
+poor <- which(str_detect(helpful_one_star_review, "poor"))    # 2/75
+#helpful_one_star_review[poor]
+
+voltage <- which(str_detect(helpful_one_star_review, "loud")) # 4/75
+#helpful_one_star_review[voltage]
+
+mo <- which(str_detect(helpful_one_star_review, "month"))     # 24/75
+#helpful_one_star_review[mo]
+
+days <- which(str_detect(helpful_one_star_review, "week"))
+#helpful_one_star_review[days]
+
+hot <- which(str_detect(helpful_one_star_review, "hot"))    # 24/75
+#helpful_one_star_review[hot]
+
+wet <- which(str_detect(helpful_one_star_review, "wet"))    # 3/75
+#helpful_one_star_review[wet]
+
+shut <- which(str_detect(helpful_one_star_review, "shut"))
+#helpful_one_star_review[shut]
+
+H <- c(length(not), length(work), length(mo), length(hot), length(money), length(burn), length(days), length(broke), length(bad))
+M <- c("not", "month", "work", "hot", "burn", "week", "money", "bad", "broke")
+barplot(H, names.arg = M , xlab = "Keywords", ylab = "Frequency", main = "Keywords in 1671 One/Two Star Rating Reviews", las = 2, horiz = TRUE)
+
+
+```
+
+```{r}
+one_star_rating <- which(pacifier$star_rating == 1)
+num_1star <- length(one_star_rating)
+
+two_star_rating <- which(pacifier$star_rating == 2)
+num_2star <- length(two_star_rating)
+
+three_star_rating <- which(pacifier$star_rating == 3)
+num_3star <- length(three_star_rating)
+
+four_star_rating <- which(pacifier$star_rating == 4)
+num_4star <- length(four_star_rating)
+
+five_star_rating <- which(pacifier$star_rating == 5)
+num_5star <- length(five_star_rating)
+
+L <- c(num_1star, num_2star, num_3star, num_4star, num_5star)
+N <- c("1", "2", "3", "4", "5")
+barplot(L, names.arg = N, main = "Distribution of ratings for pacifier")
+```
+
+```{r}
+h_one_star <- which(pacifier$star_rating == 1 & pacifier$help_score > 10)
+num_h1 <- length(h_one_star)
+
+h_two_star <- which(pacifier$star_rating == 2 & pacifier$help_score > 10)
+num_h2 <- length(h_two_star)
+
+h_three_star <- which(pacifier$star_rating == 3 & pacifier$help_score > 10)
+num_h3 <- length(h_three_star)
+
+h_four_star <- which(pacifier$star_rating == 4 & pacifier$help_score > 10)
+num_h4 <- length(h_four_star)
+
+h_five_star <- which(pacifier$star_rating == 5 & pacifier$help_score > 10)
+num_h5 <- length(h_five_star)
+
+hehe <- c(num_h1, num_h2, num_h3, num_h4, num_h5)
+barplot(hehe, names.arg = N, main = "Distribution of ratings with helpfulness score > 10 for microwave")
+```
+
+```{r}
+pac_products <- unique(pacifier$product_id)
+pac_products[1]
+#dryer_products
+
+p_count <- vector(length = length(pac_products))
+j <- 1
+while (j < length(pac_products)) {
+  i <- 1
+  while (i < length(pacifier$product_id)) {
+    id <- pacifier$product_id[i]
+    if (id == pac_products[j]) {
+      p_count[j] = p_count[j] + 1
+    }
+    i = i + 1
+  }
+  j = j + 1
+}
+#count = count / length(dryer$product_id)
+p_count
+
+#matter_count <- which(count >= 100)
+#matter_count
+
+#x <- which(dryer$product_id == dryer_products[matter_count])
+#analyze the products that have over 100 reviews
+
+#b003_ratings <- dryer$star_rating[which(dryer$product_id == "B003V264WW")]
+#hist(b003_ratings)
+```
+
+```{r}
+p_helpful_count <- which(p_count >= 215)
+pac_products[p_helpful_count]
+```
+
+```{r}
+pac1_index <- which(pacifier$product_id == pac_products[p_helpful_count][1])
+reviews_pac1 <- pacifier$review_body[pac1_index]
+#reviews_micro1
+reviews_pac1_StarRating <- with(pacifier, tapply(pacifier$star_rating[pac1_index], pacifier$review_body[pac1_index], mean))
+#reviews_dryer1_Star
+```
+#replicate for all 5 dryers with more than 300 reviews
+```{r}
+pac2_index <- which(pacifier$product_id == pac_products[p_helpful_count][2])
+reviews_pac2 <- pacifier$review_body[pac2_index]
+#reviews_micro1
+reviews_pac2_StarRating <- with(pacifier, tapply(pacifier$star_rating[pac2_index], pacifier$review_body[pac2_index], mean))
+
+pac3_index <- which(pacifier$product_id == pac_products[p_helpful_count][3])
+reviews_pac3 <- pacifier$review_body[pac3_index]
+#reviews_micro1
+reviews_pac3_StarRating <- with(pacifier, tapply(pacifier$star_rating[pac3_index], pacifier$review_body[pac3_index], mean))
+
+pac4_index <- which(pacifier$product_id == pac_products[p_helpful_count][4])
+reviews_pac4 <- pacifier$review_body[pac4_index]
+#reviews_micro1
+reviews_pac4_StarRating <- with(pacifier, tapply(pacifier$star_rating[pac4_index], pacifier$review_body[pac4_index], mean))
+
+pac5_index <- which(pacifier$product_id == pac_products[p_helpful_count][5])
+reviews_pac5 <- pacifier$review_body[pac5_index]
+#reviews_micro1
+reviews_pac5_StarRating <- with(pacifier, tapply(pacifier$star_rating[pac5_index], pacifier$review_body[pac5_index], mean))
+
+```
+# perform str_detect on these functions
+```{r}
+pac1_1star_index <- which(pacifier$star_rating[pac1_index] == 1)     # disappointed, too heavy, broke easily
+pac1_1star <- reviews_pac1[pac1_1star_index]
+#dryer1_1star
+
+pac2_1star_index <- which(pacifier$star_rating[pac2_index] == 1)     # not hot enough
+pac2_1star <- reviews_pac2[pac2_1star_index]
+#dryer2_1star
+
+pac3_1star_index <- which(pacifier$star_rating[pac3_index] == 1)     # has retractable cord that broke
+pac3_1star <- reviews_pac3[pac3_1star_index]
+#dryer1_1star
+
+pac4_1star_index <- which(pacifier$star_rating[pac4_index] == 1)     # no durability
+pac4_1star <- reviews_pac4[pac4_1star_index]
+#dryer1_1star
+
+pac5_1star_index <- which(pacifier$star_rating[pac5_index] == 1)     # has a retractable cord that broke, not hot enough
+pac5_1star <- reviews_pac5[pac5_1star_index]
+#dryer1_1star
+
+pbad_1 <- which(str_detect(pac1_1star, "dis"))
+cat(length(pbad_1), length(pac1_1star), " ")        # 5/10 ripped apart, 3/10 hard time washing, 4/10 poor quality (counterfeit)
+
+pbad_2 <- which(str_detect(pac2_1star, "not"))
+cat(length(pbad_2), length(pac2_1star), " ")        # 4/13 poor quality, 5/13 too small, 6/13 hard to wash, 5/13 broken
+
+pbad_3 <- which(str_detect(pac3_1star, "plug"))
+cat(length(pbad_3), length(pac3_1star), " ")        # 5/14 kid hated it, 4/14 poor quality, 6/14 too small
+
+pbad_4 <- which(str_detect(pac4_1star, "cheap"))      
+cat(length(pbad_4), length(pac4_1star), " ")        # 4/7 hard to wash, 2/7 too small
+
+pbad_5 <- which(str_detect(pac5_1star, "cord"))
+cat(length(pbad_5), length(pac5_1star), " ")        # 8/13 kid hated it, 7/13 poor quality
+
+#reviews_pac1[pac1_1star_index]
+#reviews_pac2[pac2_1star_index]
+#reviews_pac3[pac3_1star_index]
+#reviews_pac4[pac4_1star_index]
+reviews_pac5[pac5_1star_index]
+```
+#finds common keywords specific to the star rating
+```{r}
+slices <- c(5, 3+6+4, 4+4+4+7+5, 5+6+2, 5+8)
+lbls <- c("ripped apart", "sanitation", "poor quality", "too small", "disliked by kids")
+color <- c("red", "blue", "yellow", "green", "purple")
+pie(slices, labels = lbls, col = color, main = "What One-Star Reviewers did NOT like about their pacifiers", angle = 45, density = 50)
+```
+#5 star stuff
+```{r}
+pac1_5star_index <- which(pacifier$star_rating[pac1_index] == 5)     # disappointed, too heavy, broke easily
+pac1_5star <- reviews_pac1[pac1_5star_index]
+#dryer1_1star
+
+pac2_5star_index <- which(pacifier$star_rating[pac2_index] == 5)     # not hot enough
+pac2_5star <- reviews_pac2[pac2_5star_index]
+#dryer2_1star
+
+pac3_5star_index <- which(pacifier$star_rating[pac3_index] == 5)     # has retractable cord that broke
+pac3_5star <- reviews_pac3[pac3_5star_index]
+#dryer1_1star
+
+pac4_5star_index <- which(pacifier$star_rating[pac4_index] == 5)     # no durability
+pac4_5star <- reviews_pac4[pac4_5star_index]
+#dryer1_1star
+
+pac5_5star_index <- which(pacifier$star_rating[pac5_index] == 5)     # has a retractable cord that broke, not hot enough
+pac5_5star <- reviews_pac5[pac5_5star_index]
+
+pgood_1 <- which(str_detect(pac1_5star, "last"))
+cat(length(pgood_1), length(pac1_5star), " ")         # 52/164 baby love, 29 wash, 17 easy, 45 effective, 4 price, 2 durable
+
+pgood_2 <- which(str_detect(pac2_5star, "last"))      
+cat(length(pgood_2), length(pac2_5star), " ")         # 130/406 baby love, 39 wash, 46 easy, 81 effective, 10 price, 4 durable
+
+pgood_3 <- which(str_detect(pac3_5star, "last"))
+cat(length(pgood_3), length(pac3_5star), " ")         # 98/377 baby love, 45 wash, 50 easy, 65 effective, 8 price, 4 durable
+
+pgood_4 <- which(str_detect(pac4_5star, "last"))
+cat(length(pgood_4), length(pac4_5star), " ")         # 62/209 baby love, 23 wash, 29 easy, 49 effective, 2 price, 3 durable
+
+pgood_5 <- which(str_detect(pac5_5star, "last"))
+cat(length(pgood_5), length(pac5_5star), " ")         # 79/303 baby love, 6 wash, 17 easy, 13 effective, 17 price, 8 durable
+
+reviews_pac1[pac1_5star_index]
+#reviews_pac2[pac2_5star_index]
+#reviews_pac3[pac3_5star_index]
+#reviews_pac4[pac4_5star_index]
+#reviews_pac5[pac5_5star_index]
+```
+
+```{r}
+slices <- c(52+130+98+62+79, 29+39+45+23+6, 17+46+50+29+17, 45+81+65+49+13, 4+10+8+2+17, 21)
+lbls <- c("loved by baby", "easy to wash", "easy to use", "effectiveness", "price", "durability")
+color <- c("red", "blue", "yellow", "green", "purple", "magenta")
+pie(slices, labels = lbls, col = color, main = "What Five-Star Reviewers liked about their pacifiers", angle = 45, density = 50)
+```
+
+```{r}
+p_ratings_by_product <- with(pacifier, tapply(pacifier$star_rating,pacifier$product_id,mean))
+p_ratings_by_product
+p_success <- p_count * (p_ratings_by_product - 3)          # 3/80 products are successful (> 300)
+#hist(m_success[which(m_success >= 300)], main = "Histogram of Success Score > 300", xlab = "Success Score")
+hist(p_success, main = "Histogram of Success Score for Pacifier", xlab = "Success Score")
+hist(p_success[which(p_success >= 200)], main = "Histogram of Success Score for Pacifier >= 200", xlab = "Success Score")
+hist(p_ratings_by_product, main = "Average Ratings by Product", xlab = "average ratings for pacifier products")
+#reviews_by_product <- with(dryer, tapply(nrow(dryer), dryer$product_id))
+# make various histograms of diff success scores, as well as big picture
+```
+
+```{r}
+p_counter <- 0
+history <- c()
+for (i in (nrow(pacifier)-1):1) {
+  if (pacifier$star_rating[i] == pacifier$star_rating[i+1]) {
+    p_counter <- p_counter + 1
+  } else {p_counter <- 0}
+  history <- c(history, p_counter)
+}
+plot(history, type = 'l', main = "Finding Consecutive Ratings over Time - Pacifier")
+```
+
+```{r}
+index <- which(history >= 15)
+hist(pacifier$star_rating[nrow(pacifier)-index-1], main = "Histogram of Star Ratings after 15 Consecutive Ratings for Pacifier", xlab = "Star Ratings")
+
+```
+
+
